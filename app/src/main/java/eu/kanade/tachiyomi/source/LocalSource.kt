@@ -5,6 +5,7 @@ import com.github.junrar.Archive
 import com.hippo.unifile.UniFile
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.cache.CoverCache
+import eu.kanade.tachiyomi.data.database.models.Manga
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -38,6 +39,8 @@ import java.io.FileInputStream
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
 import java.util.zip.ZipFile
+import eu.kanade.domain.chapter.model.Chapter as DomainChapter
+import eu.kanade.domain.manga.model.Manga as DomainManga
 
 class LocalSource(
     private val context: Context,
@@ -370,6 +373,33 @@ class LocalSource(
 
             manga.thumbnail_url = coverFile.absolutePath
             return coverFile
+        }
+        private fun getChapterFile(mangaName: String, baseDirsFile: Sequence<File>): File? {
+            val file = baseDirsFile
+                // Get the first file that contains the manga name or null
+                .firstOrNull {
+                    it.isFile && it.name.contains(mangaName)
+                }
+            return file
+        }
+
+        fun deleteChapters(
+            Chapters: List<DomainChapter>,
+            manga: DomainManga,
+            context: Context,
+        ) {
+            val baseDirs = getBaseDirectoriesFiles(context)
+            val files = getMangaDirsFiles(manga.url, baseDirs)
+            Chapters.forEach { Chapter ->
+                val chapterFile = getChapterFile(Chapter.name, files)
+                chapterFile?.delete()
+            }
+        }
+
+        fun deleteManga(manga: Manga, context: Context) {
+            val baseDirs = getBaseDirectoriesFiles(context)
+            val dir = getMangaDir(manga.url, baseDirs)
+            dir?.deleteRecursively()
         }
     }
 }
