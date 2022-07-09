@@ -31,8 +31,10 @@ import eu.kanade.tachiyomi.data.preference.PreferencesHelper
 import eu.kanade.tachiyomi.data.track.EnhancedTrackService
 import eu.kanade.tachiyomi.data.track.TrackManager
 import eu.kanade.tachiyomi.data.track.TrackService
+import eu.kanade.tachiyomi.source.LocalSource
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceManager
+import eu.kanade.tachiyomi.source.isLocalOrStub
 import eu.kanade.tachiyomi.source.model.toSChapter
 import eu.kanade.tachiyomi.ui.base.presenter.BasePresenter
 import eu.kanade.tachiyomi.ui.manga.track.TrackItem
@@ -562,28 +564,37 @@ class MangaPresenter(
      */
     fun deleteChapters(chapters: List<DomainChapter>) {
         launchIO {
-            val chapters2 = chapters.map { it.toDbChapter() }
-            try {
-                updateSuccessState { successState ->
-                    val deletedIds = downloadManager
-                        .deleteChapters(chapters2, successState.manga, successState.source)
-                        .map { it.id }
-                    val deletedChapters = successState.chapters.filter { deletedIds.contains(it.chapter.id) }
-                    if (deletedChapters.isEmpty()) return@updateSuccessState successState
+            if (successState?.source?.isLocalOrStub() == true) {
+                val context = preferences.context
+                val thisManga = manga
 
-                    // TODO: Don't do this fake status update
-                    val newChapters = successState.chapters.toMutableList().apply {
-                        deletedChapters.forEach {
-                            val index = indexOf(it)
-                            val toAdd = removeAt(index)
-                                .copy(downloadState = Download.State.NOT_DOWNLOADED, downloadProgress = 0)
-                            add(index, toAdd)
-                        }
-                    }
-                    successState.copy(chapters = newChapters)
+                if (thisManga != null) {
+                    LocalSource.deleteChapters(chapters, thisManga, context)
                 }
-            } catch (e: Throwable) {
-                logcat(LogPriority.ERROR, e)
+            } else {
+                val chapters2 = chapters.map { it.toDbChapter() }
+                try {
+                    updateSuccessState { successState ->
+                        val deletedIds = downloadManager
+                            .deleteChapters(chapters2, successState.manga, successState.source)
+                            .map { it.id }
+                        val deletedChapters = successState.chapters.filter { deletedIds.contains(it.chapter.id) }
+                        if (deletedChapters.isEmpty()) return@updateSuccessState successState
+
+                        // TODO: Don't do this fake status update
+                        val newChapters = successState.chapters.toMutableList().apply {
+                            deletedChapters.forEach {
+                                val index = indexOf(it)
+                                val toAdd = removeAt(index)
+                                    .copy(downloadState = Download.State.NOT_DOWNLOADED, downloadProgress = 0)
+                                add(index, toAdd)
+                            }
+                        }
+                        successState.copy(chapters = newChapters)
+                    }
+                } catch (e: Throwable) {
+                    logcat(LogPriority.ERROR, e)
+                }
             }
         }
     }

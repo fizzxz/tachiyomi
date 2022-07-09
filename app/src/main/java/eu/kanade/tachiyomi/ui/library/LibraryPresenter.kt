@@ -22,6 +22,7 @@ import eu.kanade.tachiyomi.data.database.models.toDomainManga
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.preference.PreferencesHelper
 import eu.kanade.tachiyomi.data.track.TrackManager
+import eu.kanade.tachiyomi.source.LocalSource
 import eu.kanade.tachiyomi.source.SourceManager
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
@@ -553,14 +554,7 @@ class LibraryPresenter(
             val mangaToDelete = mangaList.distinctBy { it.id }
 
             if (deleteFromLibrary) {
-                val toDelete = mangaToDelete.map {
-                    it.removeCovers(coverCache)
-                    MangaUpdate(
-                        favorite = false,
-                        id = it.id!!,
-                    )
-                }
-                updateManga.awaitAll(toDelete)
+                deleteFromLibrary(mangaToDelete)
             }
 
             if (deleteChapters) {
@@ -569,9 +563,26 @@ class LibraryPresenter(
                     if (source != null) {
                         downloadManager.deleteManga(manga.toDomainManga()!!, source)
                     }
+                    if (source == null) {
+                        val sourceLocal = sourceManager.get(manga.source)
+                        if (sourceLocal != null) {
+                            LocalSource.deleteManga(manga, context)
+                            deleteFromLibrary(mangaToDelete)
+                        }
+                    }
                 }
             }
         }
+    }
+    private suspend fun deleteFromLibrary(mangaToDelete: List<DbManga>) {
+        val toDelete = mangaToDelete.map {
+            it.removeCovers(coverCache)
+            MangaUpdate(
+                favorite = false,
+                id = it.id!!,
+            )
+        }
+        updateManga.awaitAll(toDelete)
     }
 
     /**

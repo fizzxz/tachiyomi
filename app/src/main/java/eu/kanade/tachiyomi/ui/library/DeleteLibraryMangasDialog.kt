@@ -5,7 +5,6 @@ import android.os.Bundle
 import com.bluelinelabs.conductor.Controller
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import eu.kanade.domain.manga.model.Manga
-import eu.kanade.domain.manga.model.isLocal
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.base.controller.DialogController
 
@@ -20,14 +19,10 @@ class DeleteLibraryMangasDialog<T>(bundle: Bundle? = null) :
     }
 
     override fun onCreateDialog(savedViewState: Bundle?): Dialog {
-        val canDeleteChapters = mangas.any { !it.isLocal() }
-        val items = when (canDeleteChapters) {
-            true -> listOf(
-                R.string.manga_from_library,
-                R.string.downloaded_chapters,
-            )
-            false -> listOf(R.string.manga_from_library)
-        }
+        val items = listOf(
+            R.string.manga_from_library,
+            R.string.downloaded_chapters,
+        )
             .map { resources!!.getString(it) }
             .toTypedArray()
 
@@ -41,7 +36,7 @@ class DeleteLibraryMangasDialog<T>(bundle: Bundle? = null) :
             }
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 val deleteFromLibrary = selected[0]
-                val deleteChapters = canDeleteChapters && selected[1]
+                val deleteChapters = selected[1]
                 (targetController as? Listener)?.deleteMangas(mangas, deleteFromLibrary, deleteChapters)
             }
             .setNegativeButton(android.R.string.cancel, null)

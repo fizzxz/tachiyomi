@@ -619,8 +619,6 @@ private fun SharedMangaBottomActionMenu(
         onDeleteClicked = {
             onMultiDeleteClicked(selected.map { it.chapter })
             selected.clear()
-        }.takeIf {
-            onDownloadChapter != null && selected.any { it.downloadState == Download.State.DOWNLOADED }
         },
     )
 }
