@@ -1,7 +1,3 @@
-| Build | Stable | Weekly Preview | Contribute | Support Server |
-|-------|----------|---------|------------|---------|
-| ![CI](https://github.com/tachiyomiorg/tachiyomi/workflows/CI/badge.svg?branch=dev&event=push) | [![stable release](https://img.shields.io/github/release/tachiyomiorg/tachiyomi.svg?maxAge=3600&label=download)](https://github.com/tachiyomiorg/tachiyomi/releases) | [![latest preview build](https://img.shields.io/github/v/release/tachiyomiorg/tachiyomi-preview.svg?maxAge=3600&label=download)](https://github.com/tachiyomiorg/tachiyomi-preview/releases) | [![Translation status](https://hosted.weblate.org/widgets/tachiyomi/-/svg-badge.svg)](https://hosted.weblate.org/engage/tachiyomi/?utm_source=widget) | [![Discord](https://img.shields.io/discord/349436576037732353.svg?label=discord&labelColor=7289da&color=2c2f33&style=flat)](https://discord.gg/tachiyomi) |
-
 Tachiyomi, but with the option to permanently delete local manga.
 Tested and runs on Android 11/10/9.
 Chapters can also be deleted on Android 11 and above.
