@@ -44,8 +44,8 @@ fun MangaChapterListItem(
     read: Boolean,
     bookmark: Boolean,
     selected: Boolean,
-    downloadState: Download.State,
-    downloadProgress: Int,
+    downloadStateProvider: () -> Download.State,
+    downloadProgressProvider: () -> Int,
     onLongClick: () -> Unit,
     onClick: () -> Unit,
     onDownloadClick: ((ChapterDownloadAction) -> Unit)?,
@@ -81,8 +81,8 @@ fun MangaChapterListItem(
                 }
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyMedium
-                        .copy(color = textColor),
+                    color = textColor,
+                    style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     onTextLayout = { textHeight = it.size.height },
@@ -127,8 +127,8 @@ fun MangaChapterListItem(
         if (onDownloadClick != null) {
             ChapterDownloadIndicator(
                 modifier = Modifier.padding(start = 4.dp),
-                downloadState = downloadState,
-                downloadProgress = downloadProgress,
+                downloadStateProvider = downloadStateProvider,
+                downloadProgressProvider = downloadProgressProvider,
                 onClick = onDownloadClick,
             )
         }
