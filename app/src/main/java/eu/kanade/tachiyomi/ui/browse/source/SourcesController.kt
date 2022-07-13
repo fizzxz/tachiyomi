@@ -1,6 +1,10 @@
 package eu.kanade.tachiyomi.ui.browse.source
 
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.os.Build
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
@@ -19,6 +23,7 @@ import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceController
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.GlobalSearchController
 import eu.kanade.tachiyomi.ui.browse.source.latest.LatestUpdatesController
 import eu.kanade.tachiyomi.ui.main.MainActivity
+import eu.kanade.tachiyomi.util.system.toast
 import uy.kohesive.injekt.injectLazy
 
 class SourcesController : SearchableComposeController<SourcesPresenter>() {
@@ -59,7 +64,38 @@ class SourcesController : SearchableComposeController<SourcesPresenter>() {
 
     override fun onViewCreated(view: View) {
         super.onViewCreated(view)
+        if (!preferences.localBaseDirectoryBoolean().get() &&
+            Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q
+        ) {
+            try {
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+                startActivityForResult(intent, CODE_LOCAL_DIR)
+            } catch (e: ActivityNotFoundException) {
+                activity?.toast(R.string.file_picker_error)
+            }
+        }
         requestPermissionsSafe(arrayOf(WRITE_EXTERNAL_STORAGE), 301)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (data != null && resultCode == Activity.RESULT_OK) {
+            val activity = activity ?: return
+            val uri = data.data
+
+            if (uri == null) {
+                activity.toast(R.string.backup_restore_invalid_uri)
+                return
+            }
+            when (requestCode) {
+                CODE_LOCAL_DIR -> {
+                    // Get UriPermission so it's possible to write files
+                    val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION and Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    activity.contentResolver.takePersistableUriPermission(uri, flags)
+                    preferences.localBaseDirectoryBoolean().set(true)
+                    preferences.localBaseDirectory().set(uri.toString())
+                }
+            }
+        }
     }
 
     /**
@@ -104,3 +140,4 @@ class SourcesController : SearchableComposeController<SourcesPresenter>() {
         parentController!!.router.pushController(GlobalSearchController(query))
     }
 }
+private const val CODE_LOCAL_DIR = 503

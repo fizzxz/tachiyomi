@@ -33,6 +33,12 @@ class PreferencesHelper(val context: Context) {
     private val prefs = PreferenceManager.getDefaultSharedPreferences(context)
     private val flowPrefs = FlowSharedPreferences(prefs)
 
+    private val localSourceDir = File(
+        Environment.getExternalStorageDirectory().absolutePath + File.separator +
+            context.getString(R.string.app_name),
+        "local",
+    ).toUri()
+
     private val defaultDownloadsDir = File(
         Environment.getExternalStorageDirectory().absolutePath + File.separator +
             context.getString(R.string.app_name),
@@ -185,6 +191,10 @@ class PreferencesHelper(val context: Context) {
     fun trackToken(sync: TrackService) = flowPrefs.getString(Keys.trackToken(sync.id), "")
 
     fun anilistScoreType() = flowPrefs.getString("anilist_score_type", Anilist.POINT_10)
+
+    fun localBaseDirectoryBoolean() = flowPrefs.getBoolean("local_directory_set", false)
+
+    fun localBaseDirectory() = flowPrefs.getString("local_directory", localSourceDir.toString())
 
     fun backupsDirectory() = flowPrefs.getString("backup_directory", defaultBackupDir.toString())
 

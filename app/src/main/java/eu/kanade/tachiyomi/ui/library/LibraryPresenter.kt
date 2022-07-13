@@ -570,26 +570,9 @@ class LibraryPresenter(
                             deleteFromLibrary(mangaToDelete)
                         }
                     }
-                    if (source == null) {
-                        val sourceLocal = sourceManager.get(manga.source)
-                        if (sourceLocal != null) {
-                            LocalSource.deleteManga(manga, context)
-                            deleteFromLibrary(mangaToDelete)
-                        }
-                    }
                 }
             }
         }
-    }
-    private suspend fun deleteFromLibrary(mangaToDelete: List<DbManga>) {
-        val toDelete = mangaToDelete.map {
-            it.removeCovers(coverCache)
-            MangaUpdate(
-                favorite = false,
-                id = it.id!!,
-            )
-        }
-        updateManga.awaitAll(toDelete)
     }
 
     private suspend fun deleteFromLibrary(mangaToDelete: List<eu.kanade.tachiyomi.data.database.models.Manga>) {

@@ -1,33 +1,25 @@
 package eu.kanade.tachiyomi.source
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import androidx.core.net.toUri
+import androidx.documentfile.provider.DocumentFile
 import com.github.junrar.Archive
 import com.hippo.unifile.UniFile
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.database.models.Manga
-import eu.kanade.tachiyomi.source.model.Filter
-import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.SManga
-import eu.kanade.tachiyomi.source.model.toChapterInfo
-import eu.kanade.tachiyomi.source.model.toMangaInfo
-import eu.kanade.tachiyomi.source.model.toSChapter
-import eu.kanade.tachiyomi.source.model.toSManga
+import eu.kanade.tachiyomi.data.preference.PreferencesHelper
+import eu.kanade.tachiyomi.source.model.*
 import eu.kanade.tachiyomi.util.chapter.ChapterRecognition
 import eu.kanade.tachiyomi.util.lang.compareToCaseInsensitiveNaturalOrder
 import eu.kanade.tachiyomi.util.storage.DiskUtil
 import eu.kanade.tachiyomi.util.storage.EpubFile
 import eu.kanade.tachiyomi.util.system.ImageUtil
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.decodeFromStream
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 import rx.Observable
 import tachiyomi.source.model.ChapterInfo
 import tachiyomi.source.model.MangaInfo
@@ -48,7 +40,6 @@ class LocalSource(
 ) : CatalogueSource, UnmeteredSource {
 
     private val json: Json by injectLazy()
-
     override val name: String = context.getString(R.string.local_source)
 
     override val id: Long = ID
@@ -309,6 +300,8 @@ class LocalSource(
         private const val DEFAULT_COVER_NAME = "cover.jpg"
         private val LATEST_THRESHOLD = TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS)
 
+        private val preferences: PreferencesHelper by injectLazy()
+
         private fun getBaseDirectories(context: Context): Sequence<File> {
             val localFolder = context.getString(R.string.app_name) + File.separator + "local"
             return DiskUtil.getExternalStorages(context)
@@ -317,7 +310,7 @@ class LocalSource(
         }
 
         private fun getBaseDirectoriesFiles(context: Context): Sequence<File> {
-            return getBaseDirectories(context)
+            return getBaseDirectories(context) // .listFiles().orEmpty().toList().asSequence()
                 // Get all the files inside all baseDir
                 .flatMap { it.listFiles().orEmpty().toList() }
         }
@@ -330,9 +323,9 @@ class LocalSource(
 
         private fun getMangaDirsFiles(mangaUrl: String, baseDirsFile: Sequence<File>): Sequence<File> {
             return baseDirsFile
-                // Filter out ones that are not related to the manga and is not a directory
+//                // Filter out ones that are not related to the manga and is not a directory
                 .filter { it.isDirectory && it.name == mangaUrl }
-                // Get all the files inside the filtered folders
+//                // Get all the files inside the filtered folders
                 .flatMap { it.listFiles().orEmpty().toList() }
         }
 
@@ -391,15 +384,35 @@ class LocalSource(
             val baseDirs = getBaseDirectoriesFiles(context)
             val files = getMangaDirsFiles(manga.url, baseDirs)
             Chapters.forEach { Chapter ->
-                val chapterFile = getChapterFile(Chapter.name, files)
-                chapterFile?.delete()
+                getChapterFile(Chapter.name, files)?.delete()
             }
         }
-
         fun deleteManga(manga: Manga, context: Context) {
             val baseDirs = getBaseDirectoriesFiles(context)
             val dir = getMangaDir(manga.url, baseDirs)
-            dir?.deleteRecursively()
+            if (dir != null) {
+                if (dir.deleteRecursively()) {
+                    println("${dir.name} deleted successfully")
+                } else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
+                    deleteFilesFromSDCard(preferences.localBaseDirectory().get().toUri(), dir.name, context)
+                }
+            }
+        }
+
+        private fun deleteFilesFromSDCard(uri: Uri, filename: String, context: Context) {
+            val pickedDir = DocumentFile.fromTreeUri(context, uri)
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+            } catch (e: SecurityException) {
+                e.printStackTrace()
+            }
+            val file = pickedDir!!.findFile(filename)
+            if (file!!.delete()) {
+                println("Delete successful")
+            }
         }
     }
 }

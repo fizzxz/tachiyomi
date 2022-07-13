@@ -1,5 +1,6 @@
 package eu.kanade.presentation.manga
 
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -74,16 +75,19 @@ import eu.kanade.presentation.util.isScrollingUp
 import eu.kanade.presentation.util.plus
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.download.model.Download
+import eu.kanade.tachiyomi.data.preference.PreferencesHelper
 import eu.kanade.tachiyomi.source.SourceManager
 import eu.kanade.tachiyomi.source.getNameForMangaInfo
 import eu.kanade.tachiyomi.ui.manga.ChapterItem
 import eu.kanade.tachiyomi.ui.manga.MangaScreenState
 import eu.kanade.tachiyomi.util.lang.toRelativeString
 import kotlinx.coroutines.runBlocking
+import uy.kohesive.injekt.injectLazy
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Date
 
+private val preferences: PreferencesHelper by injectLazy()
 private val chapterDecimalFormat = DecimalFormat(
     "#.###",
     DecimalFormatSymbols()
@@ -619,6 +623,12 @@ private fun SharedMangaBottomActionMenu(
         onDeleteClicked = {
             onMultiDeleteClicked(selected.map { it.chapter })
             selected.clear()
+        }.takeIf {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ||
+                (
+                    onDownloadChapter != null &&
+                        selected.any { it.downloadState == Download.State.DOWNLOADED }
+                    )
         },
     )
 }
