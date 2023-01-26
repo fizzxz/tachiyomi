@@ -1,6 +1,4 @@
-Tachiyomi, but with the option to permanently delete local manga.
-Tested and runs on Android 11/10/9.
-Chapters can also be deleted on Android 11 and above.
+Tachiyomi, with the option to permanently delete local manga.
 
 # ![app icon](./.github/readme-images/app-icon.png)Tachiyomi
 Tachiyomi is a free and open source manga reader for Android 6.0 and above.
